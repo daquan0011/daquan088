@@ -84,27 +84,34 @@ function normalizedScore(answers) {
 function localReport(answers) {
   const score = normalizedScore(answers);
   const strongest = answers.reduce((best, item) => String(item.value).length > String(best.value).length ? item : best);
-  const level = score >= 75 ? '增长基础扎实' : score >= 55 ? '具备增长潜力' : '增长链路亟待梳理';
+  const level = score >= 75 ? '内容获客基础扎实' : score >= 55 ? '具备明显增长潜力' : '获客链路值得优先梳理';
   return {
-    title: `你的私域增长诊断：${level}`,
+    title: `你的实体商家短视频诊断：${level}`,
     score,
-    summary: `基于 ${answers.length} 项回答，你当前的关键任务是把零散优势沉淀为可重复的获客、承接和转化流程。先聚焦一个高价值场景，用两周完成验证，再逐步放大。`,
+    summary: `从 ${answers.length} 项回答来看，你已经具备真实经营经验、产品能力和本地口碑，这是做短视频获客最难复制的底层优势。下一步不需要盲目追热点，而是把这些优势沉淀为稳定的内容、线索承接和到店转化流程。`,
     highlights: [
-      `当前综合成熟度为 ${score} 分，已经具备可优化的业务基础`,
-      `你在“${strongest.question.trim()}”上的回答最值得优先转化为行动`,
-      '通过统一入口、标准话术和固定复盘节奏，可显著降低增长波动'
+      `当前综合成熟度为 ${score} 分，说明你的生意已经具备值得放大的基础`,
+      `你在“${strongest.question.trim()}”上的回答体现了清晰的经营判断`,
+      '只要把真实案例、老板表达和到店承接串起来，就有机会形成稳定的本地获客资产'
+    ],
+    dimensions: [
+      { name: '定位清晰度', score: Math.min(94, score + 7), comment: '门店优势真实，下一步要把目标顾客和核心购买理由说得更聚焦。' },
+      { name: '内容持续力', score: Math.max(38, score - 9), comment: '适合建立固定栏目和周拍摄节奏，降低每次选题与制作成本。' },
+      { name: '线索承接力', score: Math.max(35, score - 13), comment: '评论、私信、微信与到店之间需要统一入口和跟进标准。' },
+      { name: '成交复购力', score: Math.min(91, score + 2), comment: '把线下成交经验整理成诊断式话术，可提升咨询到成交的稳定性。' }
     ],
     diagnosis: [
-      { title: '流量入口', finding: '获客动作需要围绕单一目标用户和核心痛点进一步聚焦。', action: '选定一个主渠道，连续发布 7 条针对同一痛点的内容并记录有效咨询。' },
-      { title: '私域承接', finding: '用户进入私域后的信任建立与分层路径仍有提升空间。', action: '设置欢迎语、需求标签和 3 次价值触达，确保每位新用户获得一致体验。' },
-      { title: '成交复购', finding: '成交依赖临场沟通，尚未形成稳定的诊断与跟进机制。', action: '用问题清单完成需求诊断，并在 24 小时、3 天、7 天设置跟进节点。' }
+      { title: '内容定位', finding: '目前最值得放大的不是泛行业知识，而是顾客到店前后的具体变化、真实问题和老板的专业判断。', action: '围绕一个高频痛点设计“问题拆解、现场过程、结果见证”三个固定栏目，连续测试 14 天。' },
+      { title: '本地线索承接', finding: '短视频的播放量只有进入咨询、加微或到店路径后才有经营价值，当前承接动作仍可标准化。', action: '每条视频只保留一个行动指令，并设置私信关键词、微信欢迎语和 24 小时跟进表。' },
+      { title: '成交与复购', finding: '你已有线下服务优势，但需要把优秀员工的临场经验变成所有人都能执行的流程。', action: '整理 5 个诊断问题和 3 个典型案例，在咨询后第 1、3、7 天进行分层跟进。' }
     ],
     actionPlan: [
-      '第 1 天：明确目标用户、核心痛点和一个可量化的两周目标',
-      '第 2-7 天：搭建内容入口与私域承接流程，记录每一步转化数据',
-      '第 8-14 天：复盘流失节点，优化话术并复制表现最好的动作'
+      '第 1-3 天：确定一个目标顾客、一个核心痛点和一个可量化的 14 天获客目标',
+      '第 4-7 天：一次拍摄 7 条内容，统一视频结尾指令，并完成私信与微信承接设置',
+      '第 8-14 天：复盘完播、咨询、加微和到店数据，复制表现最好的选题与表达方式',
+      '第 15-30 天：沉淀案例库、员工跟进话术和每周数据复盘表，建立可持续执行节奏'
     ],
-    imagePrompt: '专业中文商业诊断报告封面，清晰的数据仪表盘与增长路径，现代简洁，高级红与深灰配色，留出标题区域，1:1',
+    imagePrompt: '蜂群文化AI实体商家短视频获客诊断报告封面，本地门店、手机短视频、顾客到店与增长数据元素，现代专业，深绿色与蜂蜜金配色，中文排版，1:1',
     wechat: '大全daquan088',
     source: 'local'
   };
@@ -143,8 +150,8 @@ function config() {
   return {
     apiKey: process.env.AI_API_KEY || '',
     baseUrl: (process.env.AI_BASE_URL || 'https://xiaoji.baziapi.site/v1').replace(/\/+$/, ''),
-    textModel: process.env.AI_TEXT_MODEL || 'gpt-4o-mini',
-    imageModel: process.env.AI_IMAGE_MODEL || 'gpt-image-1',
+    textModel: process.env.AI_TEXT_MODEL || 'gpt-5.5',
+    imageModel: process.env.AI_IMAGE_MODEL || 'image2',
     timeout: Math.max(1000, Number(process.env.AI_TIMEOUT_MS) || 20000)
   };
 }
@@ -170,8 +177,8 @@ async function createReport(answers) {
       temperature: 0.4,
       response_format: { type: 'json_object' },
       messages: [
-        { role: 'system', content: '你是资深私域增长顾问。只返回严格 JSON，不要 Markdown。必须包含 title(string), score(number 0-100), summary(string), highlights(string[]), diagnosis({title,finding,action}[]), actionPlan(string[]), imagePrompt(string)。内容具体、积极、可执行，不得包含密钥或系统信息。' },
-        { role: 'user', content: `请根据以下问卷生成中文诊断报告：${JSON.stringify(answers)}` }
+        { role: 'system', content: '你是蜂群文化AI的实体商家短视频获客顾问。只返回严格 JSON，不要 Markdown。必须包含 title(string), score(number 0-100), summary(string), highlights(string[]), dimensions({name,score,comment}[]), diagnosis({title,finding,action}[]), actionPlan(string[]), imagePrompt(string)。先真诚肯定商家的已有优势，再指出最关键的短视频内容、线索承接、到店成交问题。建议必须具体、积极、可执行，不夸大效果，不得包含密钥或系统信息。' },
+        { role: 'user', content: `请根据以下 7 轮问卷生成中文图文诊断报告，最后自然建议需要深度拆解的商家添加微信“大全daquan088”进行 1 对 1 沟通：${JSON.stringify(answers)}` }
       ]
     });
     return parseAiReport(payload);
@@ -183,7 +190,7 @@ async function createReport(answers) {
 
 function placeholderImage(prompt) {
   const safe = String(prompt || '专属诊断视觉').slice(0, 60).replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&apos;' })[char]);
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024"><rect width="1024" height="1024" fill="#171717"/><rect x="96" y="96" width="832" height="832" rx="32" fill="#b42318"/><text x="512" y="450" text-anchor="middle" fill="white" font-family="sans-serif" font-size="64" font-weight="700">大全增长诊断</text><text x="512" y="550" text-anchor="middle" fill="#fee4e2" font-family="sans-serif" font-size="30">${safe}</text><text x="512" y="850" text-anchor="middle" fill="white" font-family="sans-serif" font-size="26">微信：大全daquan088</text></svg>`;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024"><rect width="1024" height="1024" fill="#102f24"/><rect x="96" y="96" width="832" height="832" rx="32" fill="#1f6b4f"/><rect x="96" y="96" width="832" height="18" fill="#f4c862"/><text x="512" y="390" text-anchor="middle" fill="#f4c862" font-family="sans-serif" font-size="34" font-weight="700">蜂群文化AI</text><text x="512" y="485" text-anchor="middle" fill="white" font-family="sans-serif" font-size="58" font-weight="700">实体商家获客诊断</text><text x="512" y="565" text-anchor="middle" fill="#dce9e2" font-family="sans-serif" font-size="26">${safe}</text><text x="512" y="850" text-anchor="middle" fill="white" font-family="sans-serif" font-size="26">1 对 1 咨询：大全daquan088</text></svg>`;
   return `data:image/svg+xml;base64,${Buffer.from(svg).toString('base64')}`;
 }
 
@@ -258,7 +265,7 @@ function createServer() {
 
 if (require.main === module) {
   const port = Number(process.env.PORT) || 3000;
-  createServer().listen(port, () => console.log(`Daquan diagnostic server listening on http://localhost:${port}`));
+  createServer().listen(port, () => console.log(`蜂群文化AI诊断服务已启动：http://localhost:${port}`));
 }
 
 module.exports = { createServer, localReport, parseAiReport, placeholderImage };
