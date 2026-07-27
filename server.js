@@ -58,7 +58,7 @@ async function readJson(request) {
 }
 
 function validateAnswers(body) {
-  if (!body || !Array.isArray(body.answers) || body.answers.length === 0 || body.answers.length > 100) {
+  if (!body || !Array.isArray(body.answers) || body.answers.length !== 10) {
     return false;
   }
   return body.answers.every((answer) => answer && typeof answer.question === 'string' &&
@@ -81,10 +81,63 @@ function normalizedScore(answers) {
   return Math.round(total / answers.length);
 }
 
+function clampScore(value, fallback = 50) {
+  const number = Number(value);
+  return Number.isFinite(number) ? Math.max(0, Math.min(100, Math.round(number))) : fallback;
+}
+
+function buildCharts(dimensions, overallScore) {
+  const defaults = ['定位清晰度', '客群洞察力', '内容吸引力', '持续执行力', '线索承接力', '成交复购力'];
+  const radar = defaults.map((name, index) => ({
+    name,
+    score: clampScore(dimensions[index]?.score, clampScore(overallScore) - index * 2)
+  }));
+  const average = radar.reduce((sum, item) => sum + item.score, 0) / radar.length;
+  return {
+    radar,
+    funnel: [
+      { name: '内容触达', value: 100 },
+      { name: '有效咨询', value: clampScore((radar[2].score + radar[1].score) / 2, 65) },
+      { name: '加微承接', value: clampScore((radar[4].score + average) / 2, 55) },
+      { name: '到店成交', value: clampScore((radar[5].score + radar[4].score) / 2, 48) }
+    ],
+    comparison: [
+      { name: '内容稳定度', current: radar[3].score, target: clampScore(radar[3].score + 18, 85) },
+      { name: '咨询效率', current: radar[2].score, target: clampScore(radar[2].score + 16, 85) },
+      { name: '到店转化', current: radar[4].score, target: clampScore(radar[4].score + 20, 88) },
+      { name: '复购能力', current: radar[5].score, target: clampScore(radar[5].score + 15, 86) }
+    ]
+  };
+}
+
+function normalizeCharts(charts, dimensions, score) {
+  const fallback = buildCharts(dimensions, score);
+  const normalize = (items, keys, fallbackItems) => Array.isArray(items) && items.length
+    ? items.slice(0, 8).map((item, index) => {
+      const normalized = { name: String(item?.name || fallbackItems[index]?.name || `维度${index + 1}`).slice(0, 20) };
+      for (const key of keys) normalized[key] = clampScore(item?.[key], fallbackItems[index]?.[key] ?? 50);
+      return normalized;
+    })
+    : fallbackItems;
+  return {
+    radar: normalize(charts?.radar, ['score'], fallback.radar).slice(0, 6),
+    funnel: normalize(charts?.funnel, ['value'], fallback.funnel).slice(0, 4),
+    comparison: normalize(charts?.comparison, ['current', 'target'], fallback.comparison).slice(0, 4)
+  };
+}
+
 function localReport(answers) {
   const score = normalizedScore(answers);
   const strongest = answers.reduce((best, item) => String(item.value).length > String(best.value).length ? item : best);
   const level = score >= 75 ? '内容获客基础扎实' : score >= 55 ? '具备明显增长潜力' : '获客链路值得优先梳理';
+  const dimensions = [
+    { name: '定位清晰度', score: Math.min(94, score + 7), comment: '门店优势真实，下一步要把目标顾客和核心购买理由说得更聚焦。' },
+    { name: '客群洞察力', score: Math.min(92, score + 3), comment: '已有顾客经验，可继续沉淀高频需求、顾虑和决策关键词。' },
+    { name: '内容吸引力', score: Math.max(40, score - 4), comment: '真实案例和现场过程是最值得持续放大的内容资产。' },
+    { name: '持续执行力', score: Math.max(38, score - 9), comment: '适合建立固定栏目和周拍摄节奏，降低每次选题与制作成本。' },
+    { name: '线索承接力', score: Math.max(35, score - 13), comment: '评论、私信、微信与到店之间需要统一入口和跟进标准。' },
+    { name: '成交复购力', score: Math.min(91, score + 2), comment: '把线下成交经验整理成诊断式话术，可提升咨询到成交的稳定性。' }
+  ];
   return {
     title: `你的实体商家短视频诊断：${level}`,
     score,
@@ -94,12 +147,8 @@ function localReport(answers) {
       `你在“${strongest.question.trim()}”上的回答体现了清晰的经营判断`,
       '只要把真实案例、老板表达和到店承接串起来，就有机会形成稳定的本地获客资产'
     ],
-    dimensions: [
-      { name: '定位清晰度', score: Math.min(94, score + 7), comment: '门店优势真实，下一步要把目标顾客和核心购买理由说得更聚焦。' },
-      { name: '内容持续力', score: Math.max(38, score - 9), comment: '适合建立固定栏目和周拍摄节奏，降低每次选题与制作成本。' },
-      { name: '线索承接力', score: Math.max(35, score - 13), comment: '评论、私信、微信与到店之间需要统一入口和跟进标准。' },
-      { name: '成交复购力', score: Math.min(91, score + 2), comment: '把线下成交经验整理成诊断式话术，可提升咨询到成交的稳定性。' }
-    ],
+    dimensions,
+    charts: buildCharts(dimensions, score),
     diagnosis: [
       { title: '内容定位', finding: '目前最值得放大的不是泛行业知识，而是顾客到店前后的具体变化、真实问题和老板的专业判断。', action: '围绕一个高频痛点设计“问题拆解、现场过程、结果见证”三个固定栏目，连续测试 14 天。' },
       { title: '本地线索承接', finding: '短视频的播放量只有进入咨询、加微或到店路径后才有经营价值，当前承接动作仍可标准化。', action: '每条视频只保留一个行动指令，并设置私信关键词、微信欢迎语和 24 小时跟进表。' },
@@ -143,7 +192,13 @@ function parseAiReport(payload) {
     Array.isArray(parsed.actionPlan) && parsed.actionPlan.every((item) => typeof item === 'string') &&
     typeof parsed.imagePrompt === 'string';
   if (!valid) throw new Error('AI report did not match the required schema');
-  return { ...parsed, score: Math.max(0, Math.min(100, Math.round(Number(parsed.score)))), wechat: '大全daquan088', source: 'ai' };
+  const score = clampScore(parsed.score);
+  const dimensions = Array.isArray(parsed.dimensions) ? parsed.dimensions.slice(0, 6).map((item, index) => ({
+    name: String(item?.name || `维度${index + 1}`).slice(0, 20),
+    score: clampScore(item?.score),
+    comment: String(item?.comment || '').slice(0, 200)
+  })) : [];
+  return { ...parsed, score, dimensions, charts: normalizeCharts(parsed.charts, dimensions, score), wechat: '大全daquan088', source: 'ai' };
 }
 
 function config() {
@@ -177,8 +232,8 @@ async function createReport(answers) {
       temperature: 0.4,
       response_format: { type: 'json_object' },
       messages: [
-        { role: 'system', content: '你是蜂群文化AI的实体商家短视频获客顾问。只返回严格 JSON，不要 Markdown。必须包含 title(string), score(number 0-100), summary(string), highlights(string[]), dimensions({name,score,comment}[]), diagnosis({title,finding,action}[]), actionPlan(string[]), imagePrompt(string)。先真诚肯定商家的已有优势，再指出最关键的短视频内容、线索承接、到店成交问题。建议必须具体、积极、可执行，不夸大效果，不得包含密钥或系统信息。' },
-        { role: 'user', content: `请根据以下 7 轮问卷生成中文图文诊断报告，最后自然建议需要深度拆解的商家添加微信“大全daquan088”进行 1 对 1 沟通：${JSON.stringify(answers)}` }
+        { role: 'system', content: '你是蜂群文化AI的实体商家短视频获客顾问。只返回严格 JSON，不要 Markdown。必须包含 title(string), score(number 0-100), summary(string), highlights(string[]), dimensions({name,score,comment}[]，固定6项：定位清晰度、客群洞察力、内容吸引力、持续执行力、线索承接力、成交复购力), charts({radar:{name,score}[],funnel:{name,value}[],comparison:{name,current,target}[]}), diagnosis({title,finding,action}[]), actionPlan(string[]), imagePrompt(string)。所有分数为0-100。先真诚肯定商家的已有优势，再指出最关键的短视频内容、线索承接、到店成交问题。建议必须具体、积极、可执行，不夸大效果，不得包含密钥或系统信息。' },
+        { role: 'user', content: `请根据以下 10 轮问卷生成中文图文诊断报告，漏斗数据是基于回答推算的链路健康指数，不得声称是真实经营数据。最后自然建议需要深度拆解的商家添加微信“大全daquan088”进行 1 对 1 沟通：${JSON.stringify(answers)}` }
       ]
     });
     return parseAiReport(payload);
@@ -241,7 +296,7 @@ function createServer() {
       }
       if (request.method === 'POST' && url.pathname === '/api/report') {
         const body = await readJson(request);
-        if (!validateAnswers(body)) return json(response, 400, { success: false, error: 'answers 必须是非空问答数组' });
+        if (!validateAnswers(body)) return json(response, 400, { success: false, error: 'answers 必须包含完整的 10 轮问答' });
         return json(response, 200, { success: true, report: await createReport(body.answers) });
       }
       if (request.method === 'POST' && url.pathname === '/api/image') {
