@@ -1,0 +1,14 @@
+{
+  "name": "daquan-diagnostic-app",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Dependency-light backend for the Daquan lead diagnostic app",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
